@@ -38,94 +38,64 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
     case 'Pod': {
       const { phase } = debugRef.value.data.object.status;
       const { deletionTimestamp } = debugRef.value.data.object.metadata;
-      const hasWarning = false;
       const hasFailure = phase === 'Failed' || phase === 'Unknown';
       const hasCompleted = phase === 'Succeeded';
       const hasRunning = phase === 'Running';
       const hasTerminating = deletionTimestamp != undefined;
       const hasPending = phase === 'Pending';
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
-        hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
         hasTerminating,
         hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(
+          hasFailure,
+          hasCompleted,
+          hasRunning,
+          hasTerminating,
+          hasPending
+        ),
       };
     }
     case 'PVC': {
       const { phase } = debugRef.value.data.object.status;
-      const hasWarning = false;
       const hasFailure = phase === 'Lost';
-      const hasCompleted = false;
-      const hasRunning = false;
-      const hasTerminating = false;
       const hasPending = phase === 'Pending';
       const hasBound = phase === 'Bound';
-      const hasAdmitted = false;
       return {
-        hasWarning,
         hasFailure,
-        hasCompleted,
-        hasRunning,
-        hasTerminating,
         hasPending,
         hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasFailure, hasPending, hasBound),
       };
     }
     case 'PV': {
       const { phase } = debugRef.value.data.object.status;
-      const hasWarning = false;
       const hasFailure = phase === 'Failed';
-      const hasCompleted = false;
-      const hasRunning = false;
-      const hasTerminating = false;
       const hasPending = phase === 'Pending';
       const hasBound = phase === 'Bound';
-      const hasAdmitted = false;
       return {
-        hasWarning,
         hasFailure,
-        hasCompleted,
-        hasRunning,
-        hasTerminating,
         hasPending,
         hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasFailure, hasPending, hasBound),
       };
     }
     case 'Route': {
       const { ingress } = debugRef.value.data.object.status;
 
-      let admitted = "";
-      ingress.forEach((ing) => ing.conditions.forEach((cond) => admitted = cond.status))
+      let admitted = '';
+      ingress.forEach((ing) => ing.conditions.forEach((cond) => (admitted = cond.status)));
 
-      const hasWarning = false;
-      const hasFailure = admitted === "Unknown";
-      const hasCompleted = false;
-      const hasRunning = false;
-      const hasTerminating = false;
-      const hasPending = admitted === "False";
-      const hasBound = false;
-      const hasAdmitted = admitted === "True";
+      const hasFailure = admitted === 'Unknown';
+      const hasPending = admitted === 'False';
+      const hasAdmitted = admitted === 'True';
       return {
-        hasWarning,
         hasFailure,
-        hasCompleted,
-        hasRunning,
-        hasTerminating,
         hasPending,
-        hasBound,
         hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasFailure, hasPending, hasAdmitted),
       };
     }
     case 'Backup': {
@@ -134,20 +104,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
       const hasFailure = errors?.length > 0 || phase === 'Failed';
       const hasCompleted = phase === 'Completed';
       const hasRunning = phase === 'InProgress';
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'Restore': {
@@ -156,20 +118,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
       const hasFailure = errors?.length > 0 || phase === 'Failed';
       const hasCompleted = phase === 'Completed';
       const hasRunning = phase === 'InProgress';
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'PodVolumeBackup': {
@@ -178,20 +132,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
       const hasFailure = phase === 'Failed';
       const hasCompleted = phase === 'Completed';
       const hasRunning = phase === 'InProgress';
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'PodVolumeRestore': {
@@ -200,20 +146,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
       const hasFailure = phase === 'Failed';
       const hasCompleted = phase === 'Completed';
       const hasRunning = phase === 'InProgress';
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'DirectImageMigration': {
@@ -226,20 +164,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
         checkListContainsString(c.type, ['Completed', 'Succeeded'])
       );
       const hasRunning = conditions?.some((c) => c.type === 'Running');
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'DirectVolumeMigration': {
@@ -252,20 +182,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
         checkListContainsString(c.type, ['Completed', 'Succeeded'])
       );
       const hasRunning = conditions?.some((c) => c.type === 'Running');
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'DirectImageStreamMigration': {
@@ -278,20 +200,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
         checkListContainsString(c.type, ['Completed', 'Succeeded'])
       );
       const hasRunning = conditions?.some((c) => c.type === 'Running');
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'DirectVolumeMigrationProgress': {
@@ -302,22 +216,10 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
       const hasFailure = conditions?.some((c) =>
         checkListContainsString(c.type, ['InvalidPod', 'InvalidPodRef'])
       );
-      const hasCompleted = false;
-      const hasRunning = false;
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
-        hasCompleted,
-        hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure),
       };
     }
     case 'Migration': {
@@ -330,20 +232,12 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
         checkListContainsString(c.type, ['Succeeded', 'Completed'])
       );
       const hasRunning = conditions?.some((c) => c.type === 'Running');
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
     case 'Plan': {
@@ -356,26 +250,27 @@ const getResourceStatus = (debugRef: IDebugRefRes): IDerivedDebugStatusObject =>
         checkListContainsString(c.type, ['Succeeded', 'Completed'])
       );
       const hasRunning = conditions?.some((c) => c.type === 'Running');
-      const hasTerminating = false;
-      const hasPending = false;
-      const hasBound = false;
-      const hasAdmitted = false;
       return {
         hasWarning,
         hasFailure,
         hasCompleted,
         hasRunning,
-        hasTerminating,
-        hasPending,
-        hasBound,
-        hasAdmitted,
-        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted),
+        currentStatus: calculateCurrentStatus(hasWarning, hasFailure, hasCompleted, hasRunning),
       };
     }
   }
 };
 
-const calculateCurrentStatus = (hasWarning, hasFailure, hasCompleted, hasRunning, hasTerminating, hasPending, hasBound, hasAdmitted) => {
+const calculateCurrentStatus = (
+  hasWarning?,
+  hasFailure?,
+  hasCompleted?,
+  hasRunning?,
+  hasTerminating?,
+  hasPending?,
+  hasBound?,
+  hasAdmitted?
+) => {
   let currentStatus;
   if (hasTerminating) {
     currentStatus = DebugStatusType.Terminating;

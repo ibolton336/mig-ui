@@ -27,14 +27,14 @@ export interface IDebugRefWithStatus {
 }
 
 export interface IDerivedDebugStatusObject {
-  hasWarning: boolean;
-  hasFailure: boolean;
-  hasCompleted: boolean;
-  hasRunning: boolean;
-  hasPending: boolean;
-  hasTerminating: boolean;
-  hasBound: boolean;
-  hasAdmitted: boolean;
+  hasWarning?: boolean;
+  hasFailure?: boolean;
+  hasCompleted?: boolean;
+  hasRunning?: boolean;
+  hasPending?: boolean;
+  hasTerminating?: boolean;
+  hasBound?: boolean;
+  hasAdmitted?: boolean;
   currentStatus: DebugStatusType;
 }
 export enum DebugStatusType {
