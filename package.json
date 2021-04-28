@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@konveyor/lib-ui": "^1.4.5",
+    "@kubernetes/client-node": "^0.14.3",
     "@patternfly/react-core": "^4.101.3",
     "@patternfly/react-icons": "^4.9.5",
     "@patternfly/react-styles": "^4.8.5",

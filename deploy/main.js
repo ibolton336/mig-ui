@@ -4,6 +4,10 @@ const dayjs = require('dayjs');
 const compression = require('compression');
 const HttpsProxyAgent = require('https-proxy-agent');
 const { AuthorizationCode } = require('simple-oauth2');
+const testClient = require('./testClient');
+
+console.log(testClient.testClient());
+testClient.informer();
 
 let cachedOAuthMeta = null;
 
