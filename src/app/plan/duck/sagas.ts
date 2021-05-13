@@ -52,38 +52,38 @@ const PlanUpdateRetryPeriodSeconds = 5;
 /* Plan sagas */
 /******************************************************************** */
 function* fetchPlansGenerator() {
-  function fetchMigHookRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
-    const refs: Array<Promise<any>> = [];
+  // function fetchMigHookRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
+  //   const refs: Array<Promise<any>> = [];
 
-    migPlans.forEach((plan) => {
-      const migHookResource = new MigResource(MigResourceKind.MigHook, migMeta.namespace);
-      refs.push(client.list(migHookResource));
-    });
+  //   migPlans.forEach((plan) => {
+  //     const migHookResource = new MigResource(MigResourceKind.MigHook, migMeta.namespace);
+  //     refs.push(client.list(migHookResource));
+  //   });
 
-    return refs;
-  }
+  //   return refs;
+  // }
 
-  function fetchMigAnalyticRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
-    const refs: Array<Promise<any>> = [];
+  // function fetchMigAnalyticRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
+  //   const refs: Array<Promise<any>> = [];
 
-    migPlans.forEach((plan) => {
-      const migAnalyticResource = new MigResource(MigResourceKind.MigAnalytic, migMeta.namespace);
-      refs.push(client.list(migAnalyticResource));
-    });
+  //   migPlans.forEach((plan) => {
+  //     const migAnalyticResource = new MigResource(MigResourceKind.MigAnalytic, migMeta.namespace);
+  //     refs.push(client.list(migAnalyticResource));
+  //   });
 
-    return refs;
-  }
+  //   return refs;
+  // }
 
-  function fetchMigMigrationsRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
-    const refs: Array<Promise<any>> = [];
+  // function fetchMigMigrationsRefs(client: IClusterClient, migMeta, migPlans): Array<Promise<any>> {
+  //   const refs: Array<Promise<any>> = [];
 
-    migPlans.forEach((plan) => {
-      const migMigrationResource = new MigResource(MigResourceKind.MigMigration, migMeta.namespace);
-      refs.push(client.list(migMigrationResource));
-    });
+  //   migPlans.forEach((plan) => {
+  //     const migMigrationResource = new MigResource(MigResourceKind.MigMigration, migMeta.namespace);
+  //     refs.push(client.list(migMigrationResource));
+  //   });
 
-    return refs;
-  }
+  //   return refs;
+  // }
 
   const state = yield select();
   const client: IClusterClient = ClientFactory.cluster(state);
@@ -91,24 +91,17 @@ function* fetchPlansGenerator() {
   try {
     let planList = yield client.list(resource);
     planList = yield planList.data.items;
+    const updatedPlans = planList.map((mp) => {
+      const fullPlan = {
+        MigPlan: mp,
+        Analytics: [],
+        Migrations: [],
+        Hooks: [],
+      };
+      return fullPlan;
+    });
 
-    const migMigrationRefs = yield Promise.all(
-      fetchMigMigrationsRefs(client, state.auth.migMeta, planList)
-    );
-
-    const migAnalyticRefs = yield Promise.all(
-      fetchMigAnalyticRefs(client, state.auth.migMeta, planList)
-    );
-
-    const migHookRefs = yield Promise.all(fetchMigHookRefs(client, state.auth.migMeta, planList));
-
-    const groupedPlans = yield planUtils.groupPlans(
-      planList,
-      migMigrationRefs,
-      migAnalyticRefs,
-      migHookRefs
-    );
-    return { updatedPlans: groupedPlans };
+    return { updatedPlans: updatedPlans };
   } catch (e) {
     throw e;
   }

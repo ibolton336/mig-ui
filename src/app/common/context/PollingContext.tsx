@@ -3,6 +3,12 @@ import { useDispatch } from 'react-redux';
 import { clusterSagas } from '../../cluster/duck';
 import { ClusterActions } from '../../cluster/duck/actions';
 import { PlanActions, planSagas } from '../../plan/duck';
+import { migrationSagas } from '../../plan/Migrations/duck';
+import {
+  startMigrationPolling,
+  stopMigrationPolling,
+  updateMigrations,
+} from '../../plan/Migrations/duck/slice';
 import { storageSagas } from '../../storage/duck';
 import { StorageActions } from '../../storage/duck/actions';
 import { StatusPollingInterval } from '../duck/sagas';
@@ -24,10 +30,12 @@ interface IPollingContext {
   startDefaultStoragePolling: () => void;
   startDefaultPlanPolling: () => void;
   startDefaultHookPolling: () => void;
+  startDefaultMigrationPolling: () => void;
   stopHookPolling: () => void;
   stopClusterPolling: () => void;
   stopStoragePolling: () => void;
   stopPlanPolling: () => void;
+  stopMigrationPolling: () => void;
 }
 
 const PollingContext = React.createContext<IPollingContext>({
@@ -39,10 +47,12 @@ const PollingContext = React.createContext<IPollingContext>({
   startDefaultStoragePolling: () => undefined,
   startDefaultPlanPolling: () => undefined,
   startDefaultHookPolling: () => undefined,
+  startDefaultMigrationPolling: () => undefined,
   stopHookPolling: () => undefined,
   stopClusterPolling: () => undefined,
   stopStoragePolling: () => undefined,
   stopPlanPolling: () => undefined,
+  stopMigrationPolling: () => undefined,
 });
 
 interface IPollingContextProviderProps {
@@ -82,6 +92,14 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
   const handleHookPoll = (response) => {
     if (response) {
       dispatch(PlanActions.updateHooks(response.updatedHooks));
+      return true;
+    }
+    return false;
+  };
+
+  const handleMigrationPoll = (response) => {
+    if (response) {
+      dispatch(updateMigrations(response.updatedMigrations));
       return true;
     }
     return false;
@@ -138,11 +156,26 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
     };
     dispatch(PlanActions.startHookPolling(hookPollParams));
   };
+
+  const startDefaultMigrationPolling = () => {
+    const migrationPollParams: IPollingParams = {
+      asyncFetch: migrationSagas.fetchMigrationsGenerator,
+      callback: handleMigrationPoll,
+      delay: StatusPollingInterval,
+      retryOnFailure: true,
+      retryAfter: 5,
+      stopAfterRetries: 2,
+      pollName: 'migration',
+    };
+    dispatch(startMigrationPolling(migrationPollParams));
+  };
+
   React.useEffect(() => {
     startDefaultClusterPolling();
     startDefaultStoragePolling();
     startDefaultPlanPolling();
     startDefaultHookPolling();
+    startDefaultMigrationPolling();
   }, []);
 
   return (
@@ -153,16 +186,19 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
         startDefaultStoragePolling: () => startDefaultStoragePolling(),
         startDefaultPlanPolling: () => startDefaultPlanPolling(),
         startDefaultHookPolling: () => startDefaultHookPolling(),
+        startDefaultMigrationPolling: () => startDefaultMigrationPolling(),
         stopHookPolling: () => dispatch(PlanActions.stopHookPolling()),
         stopClusterPolling: () => dispatch(ClusterActions.stopClusterPolling()),
         stopStoragePolling: () => dispatch(StorageActions.stopStoragePolling()),
         stopPlanPolling: () => dispatch(PlanActions.stopPlanPolling()),
+        stopMigrationPolling: () => dispatch(stopMigrationPolling()),
         resumePolling: () => {
           if (!isPollingEnabled) {
             startDefaultClusterPolling();
             startDefaultStoragePolling();
             startDefaultPlanPolling();
             startDefaultHookPolling();
+            startDefaultMigrationPolling();
             setIsPollingEnabled(true);
           }
         },
@@ -172,6 +208,7 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
             dispatch(StorageActions.stopStoragePolling());
             dispatch(PlanActions.stopPlanPolling());
             dispatch(PlanActions.stopHookPolling());
+            dispatch(stopMigrationPolling());
             setIsPollingEnabled(false);
           }
         },
@@ -180,6 +217,8 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
             dispatch(ClusterActions.stopClusterPolling());
             dispatch(StorageActions.stopStoragePolling());
             dispatch(PlanActions.stopHookPolling());
+            dispatch(PlanActions.stopPlanPolling());
+            dispatch(stopMigrationPolling());
             setIsPollingEnabled(false);
           }
         },
@@ -201,12 +240,7 @@ export const usePausedPollingEffect = (): void => {
 };
 
 export const useDebugViewPollingEffect = (): void => {
-  const {
-    pausePolling,
-    resumePolling,
-    pauseIrrelevantPolling,
-    startDefaultPlanPolling,
-  } = usePollingContext();
+  const { pausePolling, resumePolling, pauseIrrelevantPolling } = usePollingContext();
   React.useEffect(() => {
     pauseIrrelevantPolling();
     return resumePolling;

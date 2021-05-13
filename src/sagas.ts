@@ -6,6 +6,7 @@ import planSagas from './app/plan/duck/sagas';
 import logSagas from './app/logs/duck/sagas';
 import clusterSagas from './app/cluster/duck/sagas';
 import storageSagas from './app/storage/duck/sagas';
+import { migrationSagas } from './app/plan/Migrations/duck';
 import { setTokenExpiryHandler } from './client/client_factory';
 import { ClusterActions } from './app/cluster/duck/actions';
 import { initFromStorage, initMigMeta } from './app/auth/duck/slice';
@@ -44,16 +45,10 @@ export default function* rootSaga() {
     commonSagas.watchStoragePolling(),
     commonSagas.watchHookPolling(),
     commonSagas.watchAlerts(),
-    planSagas.watchStagePolling(),
-    planSagas.watchMigrationPolling(),
-    planSagas.watchRollbackPolling(),
     planSagas.watchAddPlanRequest(),
     planSagas.watchAddAnalyticRequest(),
     planSagas.watchDeleteAnalyticRequest(),
     planSagas.watchRefreshAnalyticRequest(),
-    planSagas.watchRunMigrationRequest(),
-    planSagas.watchRunStageRequest(),
-    planSagas.watchRunRollbackRequest(),
     planSagas.watchPvDiscoveryRequest(),
     planSagas.watchPVUpdatePolling(),
     planSagas.watchMigrationCancel(),
@@ -84,5 +79,11 @@ export default function* rootSaga() {
     storageSagas.watchStorageAddEditStatus(),
     storageSagas.watchUpdateStorageRequest(),
     authSagas.watchAuthEvents(),
+    migrationSagas.watchStagePolling(),
+    migrationSagas.watchMigrationPolling(),
+    migrationSagas.watchRollbackPolling(),
+    migrationSagas.watchRunMigrationRequest(),
+    migrationSagas.watchRunStageRequest(),
+    migrationSagas.watchRunRollbackRequest(),
   ]);
 }

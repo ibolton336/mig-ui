@@ -99,12 +99,6 @@ const sortPlans = (planList: IPlan[]) =>
       .utc(right.MigPlan.metadata.creationTimestamp)
       .diff(dayjs.utc(left.MigPlan.metadata.creationTimestamp));
   });
-const sortMigrations = (migList: IMigration[]) =>
-  migList.sort((left, right) => {
-    return dayjs
-      .utc(right.metadata.creationTimestamp)
-      .diff(dayjs.utc(left.metadata.creationTimestamp));
-  });
 
 export const migPlanFetchRequest: PlanReducerFn = (
   state = INITIAL_STATE,
@@ -140,7 +134,6 @@ export const addPlanSuccess: PlanReducerFn = (
 ) => {
   const newPlan = {
     MigPlan: action.newPlan,
-    Migrations: [],
   } as IPlan;
 
   return {
@@ -205,7 +198,6 @@ export const updatePlanList: PlanReducerFn = (
     if (p.MigPlan.metadata.name === action.updatedPlan.metadata.name) {
       return {
         MigPlan: action.updatedPlan,
-        Migrations: [],
       } as IPlan;
     } else {
       return p;
@@ -219,143 +211,12 @@ export const updatePlanList: PlanReducerFn = (
   };
 };
 
-export const updatePlanMigrations: PlanReducerFn = (state = INITIAL_STATE, action) => {
-  // TODO: add migplan and migmigration typing
-  const updatedPlanList = state.migPlanList.map((p: IPlan) => {
-    if (p?.MigPlan?.metadata?.name === action?.updatedPlan?.MigPlan?.metadata?.name) {
-      //filter migrations
-      // TODO: fix api for MigPlan: should not contain migrations to be sane kubeApi resource
-      action.updatedPlan.Migrations = sortMigrations(action.updatedPlan.Migrations);
-      return action.updatedPlan;
-    } else {
-      return p;
-    }
-  });
-
-  const sortedList = sortPlans(updatedPlanList);
-
-  return {
-    ...state,
-    migPlanList: sortedList,
-  };
-};
-
 export const updatePlans: PlanReducerFn = (state = INITIAL_STATE, action) => {
-  const updatedPlanList = action.updatedPlans.map((p) => {
-    //filter migrations
-    p.Migrations = sortMigrations(p.Migrations);
-    return p;
-  });
-
-  const sortedList = sortPlans(updatedPlanList);
-
   return {
     ...state,
     isFetchingInitialPlans: false,
-    migPlanList: sortedList,
+    migPlanList: action.updatedPlans,
   };
-};
-
-export const initStage: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.initStage>
-) => {
-  const updatedPlan = state.migPlanList.find((p) => p.MigPlan.metadata.name === action.planName);
-  const filteredPlans = state.migPlanList.filter(
-    (p) => p.MigPlan.metadata.name !== action.planName
-  );
-
-  const updatedPlansList = [...filteredPlans, updatedPlan];
-  const sortedPlans = sortPlans(updatedPlansList);
-
-  return {
-    ...state,
-    migPlanList: sortedPlans,
-  };
-};
-
-export const initMigration: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.initMigration>
-) => {
-  const updatedPlan = state.migPlanList.find((p) => p.MigPlan.metadata.name === action.planName);
-  const filteredPlans = state.migPlanList.filter(
-    (p) => p.MigPlan.metadata.name !== action.planName
-  );
-
-  const updatedPlansList = [...filteredPlans, updatedPlan];
-  const sortedPlans = sortPlans(updatedPlansList);
-
-  return {
-    ...state,
-    migPlanList: sortedPlans,
-  };
-};
-
-export const initRollback: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.initRollback>
-) => {
-  const updatedPlan = state.migPlanList.find((p) => p.MigPlan.metadata.name === action.planName);
-  const filteredPlans = state.migPlanList.filter(
-    (p) => p.MigPlan.metadata.name !== action.planName
-  );
-
-  const updatedPlansList = [...filteredPlans, updatedPlan];
-  const sortedPlans = sortPlans(updatedPlansList);
-
-  return {
-    ...state,
-    migPlanList: sortedPlans,
-  };
-};
-
-export const stagingSuccess: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.stagingSuccess>
-) => {
-  const updatedPlan = state.migPlanList.find((p) => p.MigPlan.metadata.name === action.planName);
-  const filteredPlans = state.migPlanList.filter(
-    (p) => p.MigPlan.metadata.name !== action.planName
-  );
-
-  const updatedPlansList = [...filteredPlans, updatedPlan];
-  const sortedPlans = sortPlans(updatedPlansList);
-
-  return {
-    ...state,
-    migPlanList: sortedPlans,
-  };
-};
-export const stagingFailure: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.stagingFailure>
-) => {
-  return { ...state };
-};
-
-export const migrationSuccess: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.migrationSuccess>
-) => {
-  const updatedPlan = state.migPlanList.find((p) => p.MigPlan.metadata.name === action.planName);
-  const filteredPlans = state.migPlanList.filter(
-    (p) => p.MigPlan.metadata.name !== action.planName
-  );
-
-  const updatedPlansList = [...filteredPlans, updatedPlan];
-  const sortedPlans = sortPlans(updatedPlansList);
-
-  return {
-    ...state,
-    migPlanList: sortedPlans,
-  };
-};
-export const migrationFailure: PlanReducerFn = (
-  state = INITIAL_STATE,
-  action: ReturnType<typeof PlanActions.migrationFailure>
-) => {
-  return { ...state };
 };
 
 export const planStatusPollStart: PlanReducerFn = (
@@ -709,12 +570,6 @@ const planReducer: PlanReducerFn = (state = INITIAL_STATE, action) => {
   switch (action.type) {
     case PlanActionTypes.ADD_PLAN_REQUEST:
       return addPlanRequest(state, action);
-    case PlanActionTypes.INIT_STAGE:
-      return initStage(state, action);
-    case PlanActionTypes.INIT_MIGRATION:
-      return initMigration(state, action);
-    case PlanActionTypes.INIT_ROLLBACK:
-      return initRollback(state, action);
     case PlanActionTypes.MIG_PLAN_FETCH_REQUEST:
       return migPlanFetchRequest(state, action);
     case PlanActionTypes.MIG_PLAN_FETCH_SUCCESS:
@@ -733,20 +588,10 @@ const planReducer: PlanReducerFn = (state = INITIAL_STATE, action) => {
       return addPlanFailure(state, action);
     case PlanActionTypes.REMOVE_PLAN_SUCCESS:
       return removePlanSuccess(state, action);
-    case PlanActionTypes.STAGING_SUCCESS:
-      return stagingSuccess(state, action);
-    case PlanActionTypes.STAGING_FAILURE:
-      return stagingFailure(state, action);
-    case PlanActionTypes.MIGRATION_SUCCESS:
-      return migrationSuccess(state, action);
-    case PlanActionTypes.MIGRATION_FAILURE:
-      return migrationFailure(state, action);
     case PlanActionTypes.UPDATE_PLAN_LIST:
       return updatePlanList(state, action);
     case PlanActionTypes.UPDATE_CURRENT_PLAN_STATUS:
       return updateCurrentPlanStatus(state, action);
-    case PlanActionTypes.UPDATE_PLAN_MIGRATIONS:
-      return updatePlanMigrations(state, action);
     case PlanActionTypes.UPDATE_PLANS:
       return updatePlans(state, action);
     case PlanActionTypes.PLAN_STATUS_POLL_START:
