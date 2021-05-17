@@ -97,14 +97,6 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
     return false;
   };
 
-  const handleMigrationPoll = (response) => {
-    if (response) {
-      dispatch(updateMigrations(response.updatedMigrations));
-      return true;
-    }
-    return false;
-  };
-
   const startDefaultPlanPolling = () => {
     const planPollParams: IPollingParams = {
       asyncFetch: planSagas.fetchPlansGenerator,
@@ -159,8 +151,14 @@ export const PollingContextProvider: React.FunctionComponent<IPollingContextProv
 
   const startDefaultMigrationPolling = () => {
     const migrationPollParams: IPollingParams = {
-      asyncFetch: migrationSagas.fetchMigrationsGenerator,
-      callback: handleMigrationPoll,
+      asyncFetch: () => {
+        console.log('moving this to the migration saga for migration polling');
+        return true;
+      },
+      callback: () => {
+        console.log('moving this to the migration saga for migration polling');
+        return true;
+      },
       delay: StatusPollingInterval,
       retryOnFailure: true,
       retryAfter: 5,

@@ -14,30 +14,44 @@ import { ClientFactory } from '../../../../client/client_factory';
 import { MigResource, MigResourceKind } from '../../../../client/resources';
 import { createMigMigration } from '../../../../client/resources/conversions';
 import { IReduxState } from '../../../../reducers';
+import { certErrorOccurred } from '../../../auth/duck/slice';
 import {
   alertSuccessTimeout,
   alertErrorTimeout,
   alertProgressTimeout,
   alertWarn,
+  alertErrorModal,
 } from '../../../common/duck/slice';
+import { IAlertModalObj } from '../../../common/duck/types';
+import utils from '../../../common/duck/utils';
 import { PlanActions, PlanActionTypes } from '../../duck';
+import {
+  createMigrationFailure,
+  createMigrationRequest,
+  createMigrationSuccess,
+  migrationSuccess,
+  runMigrationRequest,
+  startMigrationPolling,
+  stopMigrationPolling,
+  updateMigrations,
+} from './slice';
 
 const uuidv1 = require('uuid/v1');
 const MigrationPollingInterval = 5000;
 
-function* fetchMigrationsGenerator() {
-  const state = yield select();
-  const client: IClusterClient = ClientFactory.cluster(state);
-  const resource = new MigResource(MigResourceKind.MigMigration, state.auth.migMeta.namespace);
-  try {
-    let migrationList = yield client.list(resource);
-    migrationList = yield migrationList.data.items;
+// function* fetchMigrationsGenerator() {
+//   const state = yield select();
+//   const client: IClusterClient = ClientFactory.cluster(state);
+//   const resource = new MigResource(MigResourceKind.MigMigration, state.auth.migMeta.namespace);
+//   try {
+//     let migrationList = yield client.list(resource);
+//     migrationList = yield migrationList.data.items;
 
-    return { migrations: migrationList };
-  } catch (e) {
-    throw e;
-  }
-}
+//     return { migrations: migrationList };
+//   } catch (e) {
+//     throw e;
+//   }
+// }
 
 function* migrationCancel(action) {
   const state: IReduxState = yield select();
@@ -140,7 +154,7 @@ function* runStageSaga(action) {
     // const groupedPlan = planUtils.groupPlan(plan, migrationListResponse);
 
     const params = {
-      fetchPlansGenerator: fetchMigrationsGenerator,
+      // fetchPlansGenerator: fetchMigrationsGenerator,
       delay: MigrationPollingInterval,
       getStageStatusCondition: getStageStatusCondition,
       createMigRes: createMigRes,
@@ -241,7 +255,7 @@ function* runMigrationSaga(action) {
     const { migMeta } = state.auth;
     const client: IClusterClient = ClientFactory.cluster(state);
     const migrationName = `migration-${uuidv1().slice(0, 5)}`;
-    yield put(PlanActions.initMigration(plan.MigPlan.metadata.name));
+    yield put(createMigrationRequest(plan.MigPlan.metadata.name));
     yield put(alertProgressTimeout('Migration Started'));
 
     const migMigrationObj = createMigMigration(
@@ -260,51 +274,77 @@ function* runMigrationSaga(action) {
     const migrationListResponse = yield client.list(migMigrationResource);
     // const groupedPlan = planUtils.groupPlan(plan, migrationListResponse);
 
-    const params = {
-      fetchPlansGenerator: fetchMigrationsGenerator,
-      delay: MigrationPollingInterval,
-      getMigrationStatusCondition: getMigrationStatusCondition,
-      createMigRes: createMigRes,
-    };
+    // const params = {
+    //   fetchPlansGenerator: fetchMigrationsGenerator,
+    //   delay: MigrationPollingInterval,
+    //   getMigrationStatusCondition: getMigrationStatusCondition,
+    //   createMigRes: createMigRes,
+    // };
 
-    yield put(PlanActions.startMigrationPolling(params));
-    // yield put(PlanActions.updatePlanMigrations(groupedPlan));
+    // yield put(startMigrationPolling(params));
+    yield put(createMigrationSuccess(createMigRes));
   } catch (err) {
     yield put(alertErrorTimeout(err));
-    yield put(PlanActions.migrationFailure(err));
+    yield put(createMigrationFailure(err));
   }
 }
 function* migrationPoll(action) {
-  const params = { ...action.params };
+  const params = { ...action.payload };
   while (true) {
-    const updatedPlans = yield call(params.fetchPlansGenerator);
-    const pollingStatusObj = params.getMigrationStatusCondition(updatedPlans, params.createMigRes);
+    const state = yield select();
+    const client: IClusterClient = ClientFactory.cluster(state);
+    const resource = new MigResource(MigResourceKind.MigMigration, state.auth.migMeta.namespace);
+    try {
+      let migrationList = yield client.list(resource);
+      migrationList = yield migrationList.data.items;
 
-    switch (pollingStatusObj.status) {
-      case 'CANCELED':
-        yield put(alertSuccessTimeout('Migration canceled'));
-        yield put(PlanActions.stopMigrationPolling());
-        break;
-      case 'SUCCESS':
-        yield put(PlanActions.migrationSuccess(pollingStatusObj.planName));
-        yield put(alertSuccessTimeout('Migration Successful'));
-        yield put(PlanActions.stopMigrationPolling());
-        break;
-      case 'FAILURE':
-        yield put(PlanActions.migrationFailure(pollingStatusObj.error));
-        yield put(alertErrorTimeout(`${pollingStatusObj.errorMessage || 'Migration Failed'}`));
-        yield put(PlanActions.stopMigrationPolling());
-        break;
-      case 'WARN':
-        yield put(PlanActions.migrationFailure(pollingStatusObj.error));
-        yield put(alertWarn(`Migration succeeded with warnings. ${pollingStatusObj.errorMessage}`));
-        yield put(PlanActions.stopMigrationPolling());
-        break;
-
-      default:
-        break;
+      // const updatedMigrations = yield call(fetchMigrationsGenerator);
+      yield put(updateMigrations(migrationList));
+    } catch (e) {
+      const state: IReduxState = yield select();
+      const migMeta = state.auth.migMeta;
+      //handle selfSignedCert error & network connectivity error
+      if (utils.isSelfSignedCertError(e)) {
+        const oauthMetaUrl = `${migMeta.clusterApi}/.well-known/oauth-authorization-server`;
+        const alertModalObj: IAlertModalObj = {
+          name: params.pollName,
+          errorMessage: 'error',
+        };
+        if (state.common.errorModalObject === null) {
+          yield put(alertErrorModal(alertModalObj));
+          yield put(certErrorOccurred(oauthMetaUrl));
+        }
+      }
     }
-    yield delay(params.delay);
+
+    // const pollingStatusObj = getMigrationStatusCondition(updatedMigrations, params.createMigRes);
+
+    // switch (pollingStatusObj.status) {
+    //   case 'CANCELED':
+    //     yield put(alertSuccessTimeout('Migration canceled'));
+    //     yield put(PlanActions.stopMigrationPolling());
+    //     break;
+    //   case 'SUCCESS':
+    //     yield put(PlanActions.migrationSuccess(pollingStatusObj.planName));
+    //     yield put(alertSuccessTimeout('Migration Successful'));
+    //     yield put(PlanActions.stopMigrationPolling());
+    //     break;
+    //   case 'FAILURE':
+    //     yield put(PlanActions.migrationFailure(pollingStatusObj.error));
+    //     yield put(alertErrorTimeout(`${pollingStatusObj.errorMessage || 'Migration Failed'}`));
+    //     yield put(PlanActions.stopMigrationPolling());
+    //     break;
+    //   case 'WARN':
+    //     yield put(PlanActions.migrationFailure(pollingStatusObj.error));
+    //     yield put(alertWarn(`Migration succeeded with warnings. ${pollingStatusObj.errorMessage}`));
+    //     yield put(PlanActions.stopMigrationPolling());
+    //     break;
+
+    //   default:
+    //     break;
+    // }
+    // yield delay(params.delay);
+    yield delay(10000);
   }
 }
 
@@ -380,7 +420,7 @@ function* runRollbackSaga(action) {
     // const groupedPlan = planUtils.groupPlan(plan, migrationListResponse);
 
     const params = {
-      fetchPlansGenerator: fetchMigrationsGenerator,
+      // fetchPlansGenerator: fetchMigrationsGenerator,
       delay: MigrationPollingInterval,
       getRollbackStatusCondition: getRollbackStatusCondition,
       createMigRes: createMigRes,
@@ -441,8 +481,8 @@ function* watchStagePolling() {
 
 function* watchMigrationPolling() {
   while (true) {
-    const data = yield take(PlanActionTypes.MIGRATION_POLL_START);
-    yield race([call(migrationPoll, data), take(PlanActionTypes.MIGRATION_POLL_STOP)]);
+    const data = yield take(startMigrationPolling);
+    yield race([call(migrationPoll, data), take(stopMigrationPolling)]);
   }
 }
 
@@ -458,7 +498,7 @@ function* watchMigrationCancel() {
 }
 
 function* watchRunMigrationRequest() {
-  yield takeLatest(PlanActionTypes.RUN_MIGRATION_REQUEST, runMigrationSaga);
+  yield takeLatest(runMigrationRequest, runMigrationSaga);
 }
 
 function* watchRunStageRequest() {
@@ -477,5 +517,5 @@ export default {
   watchRunMigrationRequest,
   watchRunRollbackRequest,
   watchMigrationCancel,
-  fetchMigrationsGenerator,
+  // fetchMigrationsGenerator,
 };

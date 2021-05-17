@@ -1,7 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import dayjs from 'dayjs';
-import { IMigration } from '../../duck/types';
+import { IMigration, IPlan } from '../../duck/types';
 
+export interface IRunMigrationRequest {
+  plan: IPlan;
+  enableQuiesce: boolean;
+}
 export interface IMigrationReducerState {
   state: any;
   migrationList: any;
@@ -42,6 +46,18 @@ const migrationSlice = createSlice({
     migrationFailure(state, action: PayloadAction<any>) {
       //N/A
     },
+    createMigrationRequest(state, action: PayloadAction<any>) {
+      //associated plan = action.payload
+      //N/A
+    },
+    createMigrationSuccess(state, action: PayloadAction<any>) {
+      //migration response = action.payload
+      //N/A
+    },
+    createMigrationFailure(state, action: PayloadAction<any>) {
+      //migration error = action.payload
+      //N/A
+    },
     startMigrationPolling(state, action: PayloadAction<any>) {
       state.isPolling = true;
       //N/A
@@ -49,6 +65,9 @@ const migrationSlice = createSlice({
     stopMigrationPolling(state) {
       state.isPolling = false;
       //N/A
+    },
+    runMigrationRequest(state, action: PayloadAction<IRunMigrationRequest>) {
+      //NA plan, enableQuiesce
     },
   },
 });
@@ -64,5 +83,9 @@ export const {
   migrationSuccess,
   startMigrationPolling,
   stopMigrationPolling,
+  runMigrationRequest,
+  createMigrationFailure,
+  createMigrationRequest,
+  createMigrationSuccess,
 } = migrationSlice.actions;
 export default migrationSlice.reducer;

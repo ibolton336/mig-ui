@@ -17,6 +17,7 @@ import {
 } from './slice';
 import { IAlertModalObj } from './types';
 import { certErrorOccurred } from '../../auth/duck/slice';
+import { startMigrationPolling, stopMigrationPolling } from '../../plan/Migrations/duck/slice';
 
 export const StatusPollingInterval = 4000;
 const ErrorToastTimeout = 5000;
@@ -73,6 +74,13 @@ function* watchHookPolling() {
   while (true) {
     const action = yield take(PlanActionTypes.HOOK_POLL_START);
     yield race([call(poll, action), take(PlanActionTypes.HOOK_POLL_STOP)]);
+  }
+}
+
+function* watchMigrationPolling() {
+  while (true) {
+    const action = yield take(startMigrationPolling);
+    yield race([call(poll, action), take(stopMigrationPolling)]);
   }
 }
 
