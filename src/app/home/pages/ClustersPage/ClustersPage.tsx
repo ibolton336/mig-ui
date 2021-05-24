@@ -26,6 +26,7 @@ import { IMigMeta } from '../../../auth/duck/types';
 import { IReduxState } from '../../../../reducers';
 import { IPlanCountByResourceName } from '../../../common/duck/types';
 import AddCircleOIcon from '@patternfly/react-icons/dist/js/icons/add-circle-o-icon';
+import { WebSocketDemo } from './websocket-test';
 
 interface IClustersPageBaseProps {
   clusterList: ICluster[];
@@ -69,6 +70,14 @@ const ClustersPageBase: React.FunctionComponent<IClustersPageBaseProps> = ({
           <Text component="h1" className={spacing.mbAuto}>
             Clusters
           </Text>
+        </TextContent>
+      </PageSection>
+      <PageSection variant="light">
+        <TextContent>
+          <Text component="h1" className={spacing.mbAuto}>
+            Websockets
+          </Text>
+          <WebSocketDemo />
         </TextContent>
       </PageSection>
       <PageSection>
