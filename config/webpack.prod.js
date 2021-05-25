@@ -8,6 +8,7 @@ module.exports = (env) => {
     new CleanWebpackPlugin(),
     new webpack.DefinePlugin({
       'process.env.BRAND_TYPE': JSON.stringify(process.env.BRAND_TYPE),
+      'process.env.PORT': JSON.stringify(process.env.EXPRESS_PORT),
     }),
     new MiniCssExtractPlugin({
       filename: '[name].css',

@@ -4,13 +4,13 @@ const dayjs = require('dayjs');
 const compression = require('compression');
 const HttpsProxyAgent = require('https-proxy-agent');
 const { AuthorizationCode } = require('simple-oauth2');
+const setupWebSocket = require('./setupWebSocket');
 
 let cachedOAuthMeta = null;
 
 const migMetaFile = process.env['MIGMETA_FILE'] || '/srv/migmeta.json';
 const viewsDir = process.env['VIEWS_DIR'] || '/srv/views';
 const staticDir = process.env['STATIC_DIR'] || '/srv/static';
-const port = process.env['EXPRESS_PORT'] || 9000;
 
 const brandType = process.env['BRAND_TYPE'];
 
@@ -112,122 +112,7 @@ app.get('*', (req, res) => {
   res.render('index.ejs', { migMeta: encodedMigMeta, brandType });
 });
 
-let WSServer = require('ws').Server;
-let server = require('http').createServer();
-let wss = new WSServer({
-  server: server,
-});
-
-server.on('request', app);
-
-wss.on('connection', function connection(ws) {
-  const k8s = require('@kubernetes/client-node');
-
-  const kc = new k8s.KubeConfig();
-  kc.loadFromDefault();
-
-  const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-
-  ws.on('message', function incoming(message) {
-    console.log(`received: ${message}`);
-    k8sApi.listNamespacedPod('openshift-migration').then((res) => {
-      ws.send(
-        JSON.stringify({
-          answer: res.body,
-        })
-      );
-    });
-  });
-});
-
-server.listen(port, function () {
-  console.log(`http/ws server listening on ${port}`);
-});
-// const server = http.createServer(app);
-// const server = require('http').createServer(app);
-// var io = require('socket.io')(server);
-
-// io.on('connection', function (socket) {
-//   console.log('connected socket!');
-
-//   socket.on('greet', function (data) {
-//     console.log(data);
-//     socket.emit('respond', { hello: 'Hey, Mr.Client!' });
-//   });
-//   socket.on('disconnect', function () {
-//     console.log('Socket disconnected');
-//   });
-// });
-// server.listen(3000, () => {
-//   console.log('listening on *:3000');
-// });
-// app.listen(port, () => {
-// console.log(`App listening on port ${port}`);
-// });
-
-//Web socket initialization
-
-// const WebSocket = require('ws');
-// const httpServer = require('http').createServer(app);
-
-// const wss = new WebSocket.Server({
-//   port: 8000,
-// perMessageDeflate: {
-//   zlibDeflateOptions: {
-//     // See zlib defaults.
-//     chunkSize: 1024,
-//     memLevel: 7,
-//     level: 3,
-//   },
-//   zlibInflateOptions: {
-//     chunkSize: 10 * 1024,
-//   },
-//   // Other options settable:
-//   clientNoContextTakeover: true, // Defaults to negotiated value.
-//   serverNoContextTakeover: true, // Defaults to negotiated value.
-//   serverMaxWindowBits: 10, // Defaults to negotiated value.
-//   // Below options specified as default values.
-//   concurrencyLimit: 10, // Limits zlib concurrency for perf.
-//   threshold: 1024, // Size (in bytes) below which messages
-//   // should not be compressed.
-// },
-//   server: httpServer,
-// });
-// const options = {
-//   /* ... */
-// };
-// const io = require('socket.io')(httpServer, options);
-// //
-
-// wss.on('connection', (socket) => {
-//   console.log(`App listening on port ${port} - socket:`, socket);
-//   /* ... */
-// });
-
-// I'm maintaining all active connections in this object
-const clients = {};
-
-// This code generates unique userid for everyuser.
-// const getUniqueID = ()
-//   const s4 = () =>
-//     Math.floor((1 + Math.random()) * 0x10000)
-//       .toString(16)
-//       .substring(1);
-//   return s4() + s4() + '-' + s4();
-// };
-
-// io.on('request', function (request) {
-//   var userID = getUniqueID();
-//   console.log(new Date() + ' Recieved a new connection from origin ' + request.origin + '.');
-//   // You can rewrite this part of the code to accept only the requests from allowed origin
-//   const connection = request.accept(null, request.origin);
-//   clients[userID] = connection;
-//   console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(clients));
-// });
-
-// WARNING !!! app.listen(3000); will not work here, as it creates a new HTTP server
-
-//Helpers
+setupWebSocket(app);
 
 const getOAuthMeta = async () => {
   if (cachedOAuthMeta) {
