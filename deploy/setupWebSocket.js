@@ -15,35 +15,45 @@ function setupWebSocket(app) {
   wss.on('connection', (ctx) => {
     // print number of active connections
     console.log('connected', wss.clients.size);
+    ctx.send('Welcome to the app! :)');
 
-    ctx.on('message', (message) => {
-      console.log(`received: ${message}`);
+    ctx.on('message', (data) => {
+      let message;
 
-      const kc = new k8s.KubeConfig();
-      kc.loadFromDefault();
+      try {
+        message = JSON.parse(data);
+        console.log(`received: ${message}`);
+      } catch (e) {
+        sendError(ws, 'Wrong format');
 
-      const opts = {};
-      kc.applyToRequest(opts);
+        return;
+      }
 
-      request.get(
-        `${kc.getCurrentCluster().server}/api/v1/namespaces/openshift-migration/${message}`,
-        opts,
-        (error, response, body) => {
-          if (error) {
-            console.log(`error: ${error}`);
+      if (message.type === 'GET_EVENTS') {
+        const kc = new k8s.KubeConfig();
+        kc.loadFromDefault();
+        const opts = {};
+        kc.applyToRequest(opts);
+        request.get(
+          `${kc.getCurrentCluster().server}/api/v1/namespaces/openshift-migration/events`,
+          opts,
+          (error, response, body) => {
+            if (error) {
+              console.log(`error: ${error}`);
+            }
+            if (response) {
+              console.log(`statusCode: ${response.statusCode}`);
+              ctx.send(
+                response.body
+                //   JSON.stringify({
+                //     answer: response.body,
+                //   })
+              );
+            }
+            console.log(`body: ${body}`);
           }
-          if (response) {
-            console.log(`statusCode: ${response.statusCode}`);
-            ctx.send(
-              response.body
-              //   JSON.stringify({
-              //     answer: response.body,
-              //   })
-            );
-          }
-          console.log(`body: ${body}`);
-        }
-      );
+        );
+      }
     });
 
     // handle close event
