@@ -1,3 +1,5 @@
+const { createTextSpan } = require('typescript');
+
 function setupWebSocket(app) {
   const port = process.env['EXPRESS_PORT'] || 9000;
 
@@ -43,12 +45,11 @@ function setupWebSocket(app) {
             }
             if (response) {
               console.log(`statusCode: ${response.statusCode}`);
-              ctx.send(
-                response.body
-                //   JSON.stringify({
-                //     answer: response.body,
-                //   })
-              );
+              const messageObject = {
+                type: 'GET_EVENTS',
+                data: response.body,
+              };
+              ctx.send(JSON.stringify(messageObject));
             }
             console.log(`body: ${body}`);
           }
