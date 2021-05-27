@@ -1,4 +1,5 @@
 const { createTextSpan } = require('typescript');
+const axios = require('axios');
 
 function setupWebSocket(app) {
   const port = process.env['EXPRESS_PORT'] || 9000;
@@ -36,24 +37,32 @@ function setupWebSocket(app) {
         kc.loadFromDefault();
         const opts = {};
         kc.applyToRequest(opts);
-        request.get(
-          `${kc.getCurrentCluster().server}/api/v1/namespaces/openshift-migration/events`,
-          opts,
-          (error, response, body) => {
-            if (error) {
-              console.log(`error: ${error}`);
+        const eventsURL = `${
+          kc.getCurrentCluster().server
+        }/api/v1/namespaces/openshift-migration/events`;
+
+        axios
+          .get(eventsURL, {
+            headers: { Authorization: `Bearer ${message.token.access_token}` },
+          })
+          .then(
+            (response) => {
+              if (response.data) {
+                console.log(`statusCode: ${response.statusCode}`);
+                const messageObject = {
+                  type: 'GET_EVENTS',
+                  data: response.data,
+                };
+                ctx.send(JSON.stringify(messageObject));
+              }
+              console.log(`body: ${response.data}`);
+            },
+            (error) => {
+              if (error) {
+                console.log(`error: ${error}`);
+              }
             }
-            if (response) {
-              console.log(`statusCode: ${response.statusCode}`);
-              const messageObject = {
-                type: 'GET_EVENTS',
-                data: response.body,
-              };
-              ctx.send(JSON.stringify(messageObject));
-            }
-            console.log(`body: ${body}`);
-          }
-        );
+          );
       }
     });
 

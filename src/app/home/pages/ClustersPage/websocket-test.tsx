@@ -26,9 +26,12 @@ export const WebSocketDemo = () => {
     [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
   }[readyState];
   useEffect(() => {
+    const LS_KEY_CURRENT_USER = 'currentUser';
+    const currentUser = JSON.parse(localStorage.getItem(LS_KEY_CURRENT_USER));
     const msg = {
       type: 'GET_EVENTS',
       date: Date.now(),
+      token: currentUser,
     };
     if (connectionStatus === 'Open') {
       sendJsonMessage(msg);
@@ -37,7 +40,7 @@ export const WebSocketDemo = () => {
   return (
     <div>
       <div>The WebSocket is currently {connectionStatus}</div>
-      {lastJsonMessage ? <span>Last message: {lastJsonMessage?.data}</span> : null}
+      {lastJsonMessage ? <span>Last message: {lastJsonMessage?.data?.kind}</span> : null}
       <ul></ul>
     </div>
   );

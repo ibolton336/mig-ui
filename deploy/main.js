@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const fs = require('fs');
 const dayjs = require('dayjs');
 const compression = require('compression');
@@ -99,6 +100,7 @@ app.get('/login/callback', async (req, res, next) => {
       login_time: currentUnixTime,
       expiry_time: currentUnixTime + accessToken.token.expires_in,
     };
+
     const params = new URLSearchParams({ user: JSON.stringify(user) });
     const uri = `/handle-login?${params.toString()}`;
     res.redirect(uri);
@@ -112,7 +114,7 @@ app.get('*', (req, res) => {
   res.render('index.ejs', { migMeta: encodedMigMeta, brandType });
 });
 
-setupWebSocket(app);
+setupWebSocket(app, axios);
 
 const getOAuthMeta = async () => {
   if (cachedOAuthMeta) {
