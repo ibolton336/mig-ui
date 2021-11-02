@@ -102,7 +102,7 @@ app.get('/login', async (req, res, next) => {
   try {
     const clusterAuth = await getClusterAuth();
     const authorizationUri = clusterAuth.authorizeURL({
-      redirect_uri: migMeta.oauth.redirectUri,
+      redirect_uri: migMeta.oauth.redirectUri || migMeta.oauth.redirectUrl,
       scope: migMeta.oauth.userScope,
     });
 
@@ -123,7 +123,7 @@ app.get('/login/callback', async (req, res, next) => {
   const { code } = req.query;
   const options = {
     code,
-    redirect_uri: migMeta.oauth.redirectUri,
+    redirect_uri: migMeta.oauth.redirectUri || migMeta.oauth.redirectUrl,
   };
   try {
     const clusterAuth = await getClusterAuth();
